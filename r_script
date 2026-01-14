@@ -1,0 +1,137 @@
+# Portfolio-Projekt: E-Commerce Analyse
+# Teil 2: R-Statistik & Retouren
+
+# 1. Bibliotheken laden
+library(tidyverse)
+library(lubridate)
+
+# 2. Daten einlesen
+df <- read_csv("E-Commerce-Analyse/ecommerce_cleaned_for_R.csv")
+
+# 3. Quick Check: Wie hoch ist die generelle Retourenquote?
+# Wir berechnen den Anteil der Zeilen, die Retouren sind
+retouren_summary <- df %>%
+  summarise(
+    total_transactions = n(),
+    total_returns = sum(is_return),
+    return_rate_percent = (sum(is_return) / n()) * 100
+  )
+
+print(retouren_summary)
+
+# 4. Welche Länder haben die höchsten Retouren?
+returns_by_country <- df %>%
+  group_by(Country) %>% # Wir gruppieren nur nach dem Land
+  summarise(
+    total_items = n(),                     # Wie viele Artikel wurden bestellt?
+    return_rate = mean(is_return) * 100    # Durchschnitt der 1er und 0er ergibt die Quote
+  ) %>%
+  filter(total_items > 100) %>%            # Wir ignorieren Länder mit zu wenig Daten
+  arrange(desc(return_rate))               # Höchste Quote zuerst
+
+# Zeige das Ergebnis
+print(returns_by_country)
+
+# Ergebnisse als CSV speichern für die Dokumentation
+write_csv(returns_by_country, "returns_by_country_results.csv")
+write_csv(retouren_summary, "general_return_summary.csv")
+
+# Ein Balkendiagramm der Top 10 Länder mit den höchsten Retourenquoten
+library(ggplot2)
+
+ggplot(head(returns_by_country, 10), aes(x = reorder(Country, return_rate), y = return_rate)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() + # Dreht das Diagramm für bessere Lesbarkeit
+  labs(
+    title = "Top 10 Länder nach Retourenquote",
+    subtitle = "Analyse basierend auf über 500.000 Transaktionen",
+    x = "Land",
+    y = "Retourenquote (%)"
+  ) +
+  theme_minimal()
+
+# Visualisierung der Top 8 Länder nach Retourenquote
+library(ggplot2)
+
+# Wir nehmen die Top 8 aus deinem Ergebnis
+top_returns <- returns_by_country %>% head(8)
+
+ggplot(top_returns, aes(x = reorder(Country, return_rate), y = return_rate, fill = Country == "Germany")) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("steelblue", "firebrick"), guide = "none") + # Deutschland wird rot hervorgehoben
+  coord_flip() +
+  labs(
+    title = "Top Retourenquoten nach Ländern",
+    subtitle = "Deutschland weist eine überdurchschnittlich hohe Quote auf (markiert)",
+    x = "Land",
+    y = "Retourenquote (%)"
+  ) +
+  theme_minimal()
+
+# --- KOMBI-CHECK: AOV & KUNDENBINDUNG ---
+
+# 1. Durchschnittlicher Warenkorbwert (AOV) pro Land
+# Wir schauen: Was gibt ein Kunde pro Rechnung (InvoiceNo) im Schnitt aus?
+aov_analysis <- df %>%
+  filter(is_return == 0) %>% # Nur echte Verkäufe, keine Retouren
+  group_by(Country, InvoiceNo) %>%
+  summarise(order_value = sum(line_revenue)) %>%
+  group_by(Country) %>%
+  summarise(
+    average_order_value = mean(order_value),
+    number_of_orders = n()
+  ) %>%
+  filter(number_of_orders > 50) %>% # Nur Länder mit relevanter Anzahl an Orders
+  arrange(desc(average_order_value))
+
+print("Durchschnittlicher Warenkorbwert (Top Länder):")
+print(head(aov_analysis))
+
+# 2. Kundenbindung: Wer sind unsere Stammkunden? (Frage 4)
+# Wie viele Kunden haben mehr als einmal bestellt?
+customer_loyalty <- df %>%
+  filter(!is.na(CustomerID)) %>% # Zeilen ohne Kunden-ID ignorieren
+  group_by(CustomerID) %>%
+  summarise(order_count = n_distinct(InvoiceNo)) %>%
+  summarise(
+    total_customers = n(),
+    repeat_customers = sum(order_count > 1),
+    loyalty_rate_percent = (sum(order_count > 1) / n()) * 100
+  )
+
+print("Kundenbindungs-Statistik:")
+print(customer_loyalty)
+
+write_csv(aov_analysis, "E-Commerce-Analyse/CSV_von_R/aov_analyse_avg_order_value.csv")
+write_csv(customer_loyalty, "E-Commerce-Analyse/CSV_von_R/customer_loyalty.csv")
+
+# Ändere den Filter von 50 auf z.B. 5, um mehr Länder einzuschließen
+aov_analysis <- df %>%
+  filter(is_return == 0) %>% 
+  group_by(Country, InvoiceNo) %>%
+  summarise(order_value = sum(line_revenue)) %>%
+  group_by(Country) %>%
+  summarise(
+    average_order_value = mean(order_value),
+    number_of_orders = n()
+  ) %>%
+  filter(number_of_orders > 5) %>% # <--- Hier die Zahl senken
+  arrange(desc(average_order_value))
+
+write_csv(aov_analysis, "E-Commerce-Analyse/CSV_von_R/aov_analyse_avg_order_value_v2.csv")
+
+# Loyalität pro Land berechnen
+loyalty_per_country <- df %>%
+  group_by(Country, CustomerID) %>%
+  summarise(orders_per_customer = n_distinct(InvoiceNo)) %>%
+  group_by(Country) %>%
+  summarise(
+    total_customers = n_distinct(CustomerID),
+    repeat_customers = sum(orders_per_customer > 1),
+    loyalty_rate_percent = (repeat_customers / total_customers) * 100
+  ) %>%
+  filter(total_customers > 1) %>% # Nur Länder mit genug Kunden für eine faire Statistik
+  arrange(desc(loyalty_rate_percent))
+
+# Als neue Datei speichern
+write_csv(loyalty_per_country, "E-Commerce-Analyse/CSV_von_R/loyalty_by_country_full.csv")
