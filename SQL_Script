@@ -1,0 +1,74 @@
+/* PROJEKT: E-Commerce Marketing ROI Analyse
+  BESCHREIBUNG: Zusammenführung von Transaktionsdaten und Marketing-Ausgaben.
+  CLEANING: Umrechnung von Preisen, Filtern von Retouren und Datumsanpassung.
+*/
+WITH daily_sales AS (
+  -- Schritt 1: Umsatz pro Tag und Land berechnen
+  SELECT
+    -- Wir extrahieren das Datum und wandeln es in den ersten Tag des Monats um,
+    -- um es mit dem Google Sheet (Budget) verknüpfbar zu machen.
+    DATE_TRUNC(DATE(InvoiceDate), MONTH) AS sales_month,
+    Country,
+    -- Berechnung: Menge * Einzelpreis = Gesamtumsatz
+    SUM(Quantity * UnitPrice) AS gross_revenue,
+    -- Zählung der Transaktionen für die Conversion-Metrik
+    COUNT(DISTINCT InvoiceNo) AS total_orders
+  FROM `trains-db-481922.ecommerce_analysis.raw_transactions`
+  WHERE UnitPrice > 0 AND Quantity > 0 -- Nur erfolgreiche Verkäufe (keine Korrekturen)
+  GROUP BY 1, 2
+),
+
+
+budget_data AS (
+  -- Schritt 2: Budget-Daten aus dem Google Sheet holen
+  SELECT
+    DATE(month) AS budget_month,
+    channel,
+    ad_spend
+  FROM `trains-db-481922.ecommerce_analysis.marketing_budget_external`
+)
+-- Schritt 3: Finaler JOIN zur Berechnung des ROI
+SELECT
+  s.sales_month,
+  b.channel,
+  b.ad_spend,
+  -- Wir aggregieren den Umsatz für den Monat (Beispiel-Logik für Portfolio)
+  ROUND(SUM(s.gross_revenue), 2) AS monthly_revenue,
+  -- ROAS (Return on Ad Spend) Berechnung
+  ROUND(SUM(s.gross_revenue) / b.ad_spend, 2) AS roas
+FROM daily_sales s
+JOIN budget_data b ON s.sales_month = b.budget_month
+GROUP BY 1, 2, 3
+ORDER BY sales_month DESC, roas DESC;
+
+
+SELECT MIN(InvoiceDate), MAX(InvoiceDate)
+FROM `trains-db-481922.ecommerce_analysis.raw_transactions`;
+
+
+-- Check: Wie viele Zeilen sind fehlerhaft (Preis 0 oder negative Menge)?
+SELECT
+  COUNT(*) as total_rows,
+  COUNTIF(UnitPrice <= 0) as invalid_prices,
+  COUNTIF(Quantity <= 0) as returns_or_errors
+FROM `trains-db-481922.ecommerce_analysis.raw_transactions`;
+
+
+SELECT
+  InvoiceNo,
+  StockCode,
+  Description,
+  Quantity,
+  InvoiceDate,
+  UnitPrice,
+  CustomerID,
+  Country,
+  -- Wir erstellen eine Markierung: 1 wenn Retoure (Menge negativ), sonst 0
+  CASE WHEN Quantity < 0 THEN 1 ELSE 0 END AS is_return,
+  -- Der absolute Umsatz (bei Retouren negativ, was korrekt ist)
+  (Quantity * UnitPrice) AS line_revenue
+FROM `trains-db-481922.ecommerce_analysis.raw_transactions`
+WHERE UnitPrice > 0; -- Wir lassen nur Zeilen mit Preis drin
+
+
+
