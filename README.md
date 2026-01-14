@@ -1,0 +1,2 @@
+# E-Commerce-Growth-Optimierung-von-Marketing-Effizienz-und-Kundenbindung
+In dieser Case Study analysiere ich einen umfangreichen E-Commerce-Datensatz (>540.000 Transaktionen), um die Marketing-Effizienz zu steigern und operative Verluste durch Retouren zu minimieren. Das Projekt deckt den gesamten Data-Analytics-Lifecycle ab: von der Datenreinigung mit SQL bis zur strategischen Visualisierung in Tableau.
