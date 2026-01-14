@@ -1,0 +1,18 @@
+Country,total_customers,repeat_customers,loyalty_rate_percent
+Sweden,2,2,100
+EIRE,4,3,75
+Belgium,5,3,60
+Portugal,7,4,57.14285714285714
+Australia,8,4,50
+Finland,2,1,50
+Netherlands,2,1,50
+Germany,35,16,45.714285714285715
+United Kingdom,1151,506,43.961772371850564
+France,31,12,38.70967741935484
+Japan,3,1,33.33333333333333
+Spain,9,3,33.33333333333333
+Switzerland,3,1,33.33333333333333
+Italy,5,1,20
+Austria,2,0,0
+Cyprus,2,0,0
+Israel,2,0,0
