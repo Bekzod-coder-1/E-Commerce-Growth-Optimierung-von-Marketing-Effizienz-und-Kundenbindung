@@ -30,4 +30,4 @@ High-Value-Market: Die Niederlande wurden als Markt mit dem höchsten Average Or
 🔗 Live Dashboard
 Sieh dir das interaktive Dashboard hier an:
 
-👉 [[Link zu deinem Tableau Public Dashboard einfügen](https://public.tableau.com/views/E-Commerce-Analyse/Dashboard1?:language=en-US&publish=yes&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)]
+👉 [[Link zu deinem Tableau Public Dashboard einfügen](https://public.tableau.com/views/E-Commerce-Analyse4/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)]
